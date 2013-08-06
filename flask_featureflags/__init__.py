@@ -30,6 +30,10 @@ class StopCheckingFeatureFlags(Exception):
   """ Raise this inside of a feature flag handler to immediately return False and stop any further handers from running """
   pass
 
+class ImproperlyConfigured(Exception):
+  """ Raised when something is not configured as expected """
+  pass
+
 def AppConfigFlagHandler(feature=None):
   """ This is the default handler. It checks for feature flags in the current app's configuration.
 
@@ -66,12 +70,12 @@ def AppConfigFlagHandler(feature=None):
 
 class FeatureFlag(object):
 
-  def __init__(self, app):
+  def __init__(self, app, handler=None):
     if app is not None:
       self.init_app(app)
 
     # The default out-of-the-box handler looks up features in Flask's app config.
-    self.handlers = [AppConfigFlagHandler]
+    self.handlers = [handler] if handler is not None else [AppConfigFlagHandler]
 
   def init_app(self, app):
     """ Inject ourself into the request setup and add a jinja function test """
@@ -102,7 +106,7 @@ class FeatureFlag(object):
 
     The order of handlers matters - we will immediately return True if any handler returns true.
 
-    If you want to a handler to return False and stop the chain, raise the StopCheckingFeatureFlags exception."""
+    If you want a handler to return False and stop the chain, raise the StopCheckingFeatureFlags exception."""
     for handler in self.handlers:
       try:
         if handler(feature): return True
